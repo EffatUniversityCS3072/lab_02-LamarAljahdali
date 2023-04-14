@@ -1,7 +1,7 @@
 ---
 title: "Lab 02"
 subtitle: "CS3172-1, Spring 2023, Effat University"
-author: ""
+author: "Lamar Aljahdali"
 output: pdf_document
 ---
 
@@ -23,46 +23,87 @@ cas <- read_rds("data/canada_survey.rds")
 ## Task 1
 
 ```{r}
+cas<-filter(cas,energy_expense>0,household_income>0)
 ```
 
 ```{r}
+cas<-mutate(cas,marital_status = factor(marital_status))
 ```
 
 ## Task 2
 
 ```{r}
+cas<-mutate(cas,heat_equip = case_when(heat_equip == 1 ~ "steam",
+ heat_equip == 2 ~ "forced air",
+ heat_equip == 3 ~ "stove",
+ heat_equip == 4 ~ "electric heating"))
 ```
 
 ```{r}
+cas<-mutate(cas,heat_fuel = case_when(heat_fuel == 1 ~ "oil",
+ heat_fuel == 2 ~ "gas",
+ heat_fuel == 3 ~ "electricity",
+ heat_fuel == 4 ~ "other"))
 ```
 
 ## Task 3
 
 ```{r}
+cas_hftandhe<-cas %>% group_by(heat_equip, heat_fuel) %>% summarise(
+ mean_energy_exp = mean(energy_expense),
+ median_energy_exp = median(energy_expense),
+ sd_energy_exp = sd(energy_expense))
+cas_hftandhe
 ```
 
 - Provide the answer to the theoretical questions here
 
+1.The combination of fuel type and equipment with the highest average energy expense is "forced air-oil" with a mean energy expense of 3498.850.
+2.The combination with the most variability with regards to energy expense is "forced air-oil" as indicated by the highest standard deviation of 2155.709.
+3.The heating equipment type that doesn't take all possible fuel types is "electric heating" as it only uses electricity and "other" fuel types, while the other heating equipment types (forced air and steam) can use electricity, gas, oil, and other fuel types.
+
 ## Task 4
 
 ```{r}
+ggplot(cas, mapping = aes(x=heat_fuel, y=energy_expense)) + geom_boxplot() +
+ scale_y_continuous(labels = scales::dollar_format()) +
+ facet_wrap(~ heat_equip, nrow = 2) + labs(title="Energy expense VS Heating 
+type", x="Heating fuel type", y="Energy expense")
 ```
 
 ## Task 5
 
 ```{r}
+proportion<-cas %>% mutate(energy_prop = energy_expense / household_income) %>%
+ arrange(desc(energy_prop)) %>%
+ slice(1, n()) %>%
+ glimpse()
+
 ```
 
 ## Task 6
 
 ```{r message=FALSE}
+province<-cas %>% mutate(eepr = energy_expense / rooms) %>%
+ group_by(year, province) %>%
+ summarise(median_energy_expense_per_room = median(eepr)) %>%
+ arrange(median_energy_expense_per_room) %>%
+ slice(1) %>%
+ ungroup()
 ```
 
 ## Task 7
 
 ```{r fig.width=7, fig.height=6, message=FALSE}
+cas %>% mutate(energy_prop = energy_expense / household_income,
+ vulnerable = if_else(energy_prop > 0.05, "vulnerable", "not")) %>%
+ group_by(education, age) %>%
+ summarize(prop_vulnerable = mean(vulnerable == "vulnerable")) %>%
+ ungroup() %>%
+ ggplot(aes(x = education, y = age, fill = prop_vulnerable)) +
+ geom_raster() +
+ scale_fill_gradient(low = "white", high = "red") +
+ labs(x = "Education", y = "Age", fill = "Proportion\nenergy\nvulnerable") +
+ theme_bw()
 ```
-
-## Task 8
-
 
